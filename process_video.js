@@ -46,6 +46,7 @@ const MESSAGES = {
   STARTING_PROCESSING: "🎬 Démarrage du traitement vidéo...",
   VIDEO_FILE_INFO: "🎥 Fichier vidéo: {videoPath}",
   IMAGE_FILE_INFO: "🖼️ Fichier image: {imagePath}",
+  IMAGE_FROM_DIR_INFO: "🖼️ Fichier image (le plus récent du répertoire): {imagePath}",
   OUTPUT_DIR_INFO: "📁 Répertoire de sortie (même chemin que l'image): {outputDir}"
 };
 
@@ -55,12 +56,15 @@ Utilisation: process_video.js [fichier-video] [fichier-image]
 
 Arguments (optionnels):
   fichier-video      Chemin vers le fichier vidéo (par défaut: valeur de config.js)
-  fichier-image      Chemin vers le fichier image (HEIC, JPEG, PNG) (par défaut: valeur de config.js)
+  fichier-image      Chemin vers le fichier image ou répertoire (par défaut: valeur de config.js)
+                     Si un répertoire est spécifié, le fichier image le plus récent sera utilisé
+                     (formats supportés: jpg, jpeg, png, heic, gif, bmp, tiff, webp)
 
 Exemples:
   process_video.js                     # Utilise les chemins définis dans config.js
   process_video.js video.mp4           # Utilise le chemin vidéo spécifié et le chemin image de config.js
   process_video.js video.mp4 image.jpg # Utilise les chemins spécifiés
+  process_video.js video.mp4 ~/Images  # Utilise le fichier image le plus récent du répertoire ~/Images
 `;
 
 /**
@@ -162,6 +166,49 @@ function printUsage() {
   console.log(USAGE_INFO);
 }
 
+/**
+ * Find the most recent image file in a directory
+ * @param {string} directoryPath - Path to the directory
+ * @returns {string|null} - Path to the most recent image file, or null if no image files found
+ */
+function findMostRecentFile(directoryPath) {
+  try {
+    // Check if the path exists and is a directory
+    const stats = fs.statSync(directoryPath);
+    if (!stats.isDirectory()) {
+      return null;
+    }
+
+    // Define valid image file extensions
+    const validImageExtensions = ['.jpg', '.jpeg', '.png', '.heic', '.gif', '.bmp', '.tiff', '.webp'];
+
+    // Get all image files in the directory
+    const files = fs.readdirSync(directoryPath)
+      .filter(file => {
+        const filePath = path.join(directoryPath, file);
+        const isFile = fs.statSync(filePath).isFile();
+        const extension = path.extname(file).toLowerCase();
+        return isFile && validImageExtensions.includes(extension);
+      })
+      .map(file => {
+        const filePath = path.join(directoryPath, file);
+        return {
+          path: filePath,
+          mtime: fs.statSync(filePath).mtime
+        };
+      });
+
+    // Sort files by modification time (most recent first)
+    files.sort((a, b) => b.mtime - a.mtime);
+
+    // Return the most recent image file, or null if no image files found
+    return files.length > 0 ? files[0].path : null;
+  } catch (error) {
+    console.error(`Erreur lors de la recherche du fichier le plus récent: ${error.message}`);
+    return null;
+  }
+}
+
 // Main function
 async function main() {
   // Get command line arguments
@@ -184,6 +231,21 @@ async function main() {
   // Use default paths from config.js if no arguments are provided
   let videoPath = args.length > 0 ? args[0] : config.videoPath;
   let imagePath = args.length > 1 ? args[1] : config.imagePath;
+
+  // Check if imagePath is a directory, and if so, find the most recent image file
+  let imageFromDirectory = false;
+  if (fs.existsSync(imagePath) && fs.statSync(imagePath).isDirectory()) {
+    const mostRecentFile = findMostRecentFile(imagePath);
+    if (mostRecentFile) {
+      console.log(`Utilisation du fichier le plus récent dans le répertoire: ${path.basename(mostRecentFile)}`);
+      imagePath = mostRecentFile;
+      imageFromDirectory = true;
+    } else {
+      console.error(`Aucun fichier image trouvé dans le répertoire: ${imagePath}`);
+      process.exit(1);
+    }
+  }
+
   const outputDir = path.dirname(imagePath);
 
   // Check if the paths are valid
@@ -195,7 +257,11 @@ async function main() {
 
   console.log(MESSAGES.STARTING_PROCESSING);
   console.log(MESSAGES.VIDEO_FILE_INFO.replace('{videoPath}', videoPath));
-  console.log(MESSAGES.IMAGE_FILE_INFO.replace('{imagePath}', imagePath));
+  if (imageFromDirectory) {
+    console.log(MESSAGES.IMAGE_FROM_DIR_INFO.replace('{imagePath}', imagePath));
+  } else {
+    console.log(MESSAGES.IMAGE_FILE_INFO.replace('{imagePath}', imagePath));
+  }
   console.log(MESSAGES.OUTPUT_DIR_INFO.replace('{outputDir}', outputDir));
 
   try {

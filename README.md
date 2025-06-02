@@ -115,3 +115,5 @@ Variables configurables dans config.js :
 - `imagePath` : Chemin par défaut vers le fichier image (utilisé si aucun argument n'est fourni)
 
 Ces chemins peuvent contenir la variable `$HOME` qui sera remplacée par le répertoire personnel de l'utilisateur.
+
+Codé presque entièrement avec [Junie](https://www.jetbrains.com/fr-fr/junie/) 😁

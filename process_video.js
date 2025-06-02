@@ -3,7 +3,7 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const config = require('./config');
+const config = require('./config.js');
 
 // File paths and names (constants)
 const TEMP_JPEG_FILENAME = "temp_hook.jpg";

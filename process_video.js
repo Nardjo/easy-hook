@@ -25,30 +25,27 @@ const FFMPEG_COMMAND = 'ffmpeg -i "{videoPath}" -i "{jpegPath}" ' +
   '-c:a copy "{outputVideo}"';
 
 // Messages in French
-const MESSAGES = {
-  // Success messages
-  HEIC_CONVERTED_SIPS: "HEIC converti en JPEG en utilisant sips",
-  HEIC_CONVERTED_IMAGEMAGICK: "HEIC converti en JPEG en utilisant ImageMagick",
-  PROCESSING_VIDEO: "Traitement de la vidéo avec ffmpeg...",
-  VIDEO_PROCESSED: "✅ Vidéo traitée avec succès: {outputPath}",
+const HEIC_CONVERTED_SIPS = "HEIC converti en JPEG en utilisant sips";
+const HEIC_CONVERTED_IMAGEMAGICK = "HEIC converti en JPEG en utilisant ImageMagick";
+const PROCESSING_VIDEO = "Traitement de la vidéo avec ffmpeg...";
+const VIDEO_PROCESSED = "✅ Vidéo traitée avec succès: {outputPath}";
 
-  // Error messages
-  VIDEO_NOT_FOUND: "Fichier vidéo introuvable à {videoPath}",
-  IMAGE_NOT_FOUND: "Fichier image introuvable à {imagePath}",
-  HEIC_CONVERSION_FAILED: "Échec de la conversion HEIC en JPEG. Veuillez vous assurer que sips ou ImageMagick est installé.",
-  FFMPEG_FAILED: "Le traitement ffmpeg a échoué: {error}",
-  OUTPUT_NOT_CREATED: "Le fichier de sortie n'a pas été créé",
-  UNEXPECTED_ERROR: "Une erreur inattendue s'est produite: {error}",
-  MISSING_ARGUMENTS: "Erreur: Arguments requis manquants",
-  SIPS_FAILED: "La conversion sips a échoué, essai d'une méthode alternative avec ImageMagick...",
+// Error messages
+const VIDEO_NOT_FOUND = "Fichier vidéo introuvable à {videoPath}";
+const IMAGE_NOT_FOUND = "Fichier image introuvable à {imagePath}";
+const HEIC_CONVERSION_FAILED = "Échec de la conversion HEIC en JPEG. Veuillez vous assurer que sips ou ImageMagick est installé.";
+const FFMPEG_FAILED = "Le traitement ffmpeg a échoué: {error}";
+const OUTPUT_NOT_CREATED = "Le fichier de sortie n'a pas été créé";
+const UNEXPECTED_ERROR = "Une erreur inattendue s'est produite: {error}";
+const MISSING_ARGUMENTS = "Erreur: Arguments requis manquants";
+const SIPS_FAILED = "La conversion sips a échoué, essai d'une méthode alternative avec ImageMagick...";
 
-  // CLI messages
-  STARTING_PROCESSING: "🎬 Démarrage du traitement vidéo...",
-  VIDEO_FILE_INFO: "🎥 Fichier vidéo: {videoPath}",
-  IMAGE_FILE_INFO: "🖼️ Fichier image: {imagePath}",
-  IMAGE_FROM_DIR_INFO: "🖼️ Fichier image (le plus récent du répertoire): {imagePath}",
-  OUTPUT_DIR_INFO: "📁 Répertoire de sortie (même chemin que l'image): {outputDir}"
-};
+// CLI messages
+const STARTING_PROCESSING = "🎬 Démarrage du traitement vidéo...";
+const VIDEO_FILE_INFO = "🎥 Fichier vidéo: {videoPath}";
+const IMAGE_FILE_INFO = "🖼️ Fichier image: {imagePath}";
+const IMAGE_FROM_DIR_INFO = "🖼️ Fichier image (le plus récent du répertoire): {imagePath}";
+const OUTPUT_DIR_INFO = "📁 Répertoire de sortie (même chemin que l'image): {outputDir}";
 
 // CLI usage information in French
 const USAGE_INFO = `
@@ -83,11 +80,11 @@ async function processVideo(videoPath, imagePath, outputDir) {
 
       // Check if files exist
       if (!fs.existsSync(videoPath)) {
-        return reject(new Error(MESSAGES.VIDEO_NOT_FOUND.replace('{videoPath}', videoPath)));
+        return reject(new Error(VIDEO_NOT_FOUND.replace('{videoPath}', videoPath)));
       }
 
       if (!fs.existsSync(imagePath)) {
-        return reject(new Error(MESSAGES.IMAGE_NOT_FOUND.replace('{imagePath}', imagePath)));
+        return reject(new Error(IMAGE_NOT_FOUND.replace('{imagePath}', imagePath)));
       }
 
       // Create output directory if it doesn't exist
@@ -108,9 +105,9 @@ async function processVideo(videoPath, imagePath, outputDir) {
             .replace('{imagePath}', imagePath)
             .replace('{jpegPath}', jpegPath);
           execSync(sipsCommand, { stdio: 'pipe' });
-          console.log(MESSAGES.HEIC_CONVERTED_SIPS);
+          console.log(HEIC_CONVERTED_SIPS);
         } catch (error) {
-          console.log(MESSAGES.SIPS_FAILED);
+          console.log(SIPS_FAILED);
 
           // Check if ImageMagick is installed
           try {
@@ -119,15 +116,15 @@ async function processVideo(videoPath, imagePath, outputDir) {
               .replace('{imagePath}', imagePath)
               .replace('{jpegPath}', jpegPath);
             execSync(convertCommand, { stdio: 'pipe' });
-            console.log(MESSAGES.HEIC_CONVERTED_IMAGEMAGICK);
+            console.log(HEIC_CONVERTED_IMAGEMAGICK);
           } catch (error) {
-            return reject(new Error(MESSAGES.HEIC_CONVERSION_FAILED));
+            return reject(new Error(HEIC_CONVERSION_FAILED));
           }
         }
       }
 
       // 2) Insert the image as the first frame
-      console.log(MESSAGES.PROCESSING_VIDEO);
+      console.log(PROCESSING_VIDEO);
       const outputVideo = path.join(outputDir, `${OUTPUT_FILE_PREFIX}${path.basename(videoPath)}`);
 
       try {
@@ -140,7 +137,7 @@ async function processVideo(videoPath, imagePath, outputDir) {
           .replace('{outputVideo}', outputVideo);
         execSync(ffmpegCommand, { stdio: 'pipe' });
       } catch (error) {
-        return reject(new Error(MESSAGES.FFMPEG_FAILED.replace('{error}', error.message)));
+        return reject(new Error(FFMPEG_FAILED.replace('{error}', error.message)));
       }
 
       // 3) Clean up temporary files
@@ -152,11 +149,11 @@ async function processVideo(videoPath, imagePath, outputDir) {
       if (fs.existsSync(outputVideo)) {
         resolve(outputVideo);
       } else {
-        reject(new Error(MESSAGES.OUTPUT_NOT_CREATED));
+        reject(new Error(OUTPUT_NOT_CREATED));
       }
 
     } catch (error) {
-      reject(new Error(MESSAGES.UNEXPECTED_ERROR.replace('{error}', error.message)));
+      reject(new Error(UNEXPECTED_ERROR.replace('{error}', error.message)));
     }
   });
 }
@@ -250,24 +247,24 @@ async function main() {
 
   // Check if the paths are valid
   if (!videoPath || !imagePath) {
-    console.error(MESSAGES.MISSING_ARGUMENTS);
+    console.error(MISSING_ARGUMENTS);
     printUsage();
     process.exit(1);
   }
 
-  console.log(MESSAGES.STARTING_PROCESSING);
-  console.log(MESSAGES.VIDEO_FILE_INFO.replace('{videoPath}', videoPath));
+  console.log(STARTING_PROCESSING);
+  console.log(VIDEO_FILE_INFO.replace('{videoPath}', videoPath));
   if (imageFromDirectory) {
-    console.log(MESSAGES.IMAGE_FROM_DIR_INFO.replace('{imagePath}', imagePath));
+    console.log(IMAGE_FROM_DIR_INFO.replace('{imagePath}', imagePath));
   } else {
-    console.log(MESSAGES.IMAGE_FILE_INFO.replace('{imagePath}', imagePath));
+    console.log(IMAGE_FILE_INFO.replace('{imagePath}', imagePath));
   }
-  console.log(MESSAGES.OUTPUT_DIR_INFO.replace('{outputDir}', outputDir));
+  console.log(OUTPUT_DIR_INFO.replace('{outputDir}', outputDir));
 
   try {
     // Process the video
     const outputPath = await processVideo(videoPath, imagePath, outputDir);
-    console.log(MESSAGES.VIDEO_PROCESSED.replace('{outputPath}', outputPath));
+    console.log(VIDEO_PROCESSED.replace('{outputPath}', outputPath));
   } catch (error) {
     console.error(`❌ ${error.message}`);
     process.exit(1);

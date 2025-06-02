@@ -1,116 +1,117 @@
-# Video Processor
+# Processeur Vidéo
 
-A command-line application that allows you to process videos by adding an image as the first frame.
+Une application en ligne de commande qui permet de traiter des vidéos en ajoutant une image comme première image.
 
-## Features
+## Fonctionnalités
 
-- Support for HEIC image format (automatically converts to JPEG)
-- Customizable output directory
-- Simple command-line interface
+- Support du format d'image HEIC (conversion automatique en JPEG)
+- Détection automatique du répertoire de sortie (même chemin que l'image)
+- Utilisation de chemins par défaut configurables
+- Possibilité d'utiliser un répertoire d'images (sélection automatique de l'image la plus récente)
+- Support de la variable $HOME dans les chemins
+- Interface en ligne de commande simple
 
-## Requirements
+## Prérequis
 
-- Node.js and npm
-- ffmpeg (for video processing)
-- On macOS: sips or ImageMagick (for HEIC conversion)
+- Node.js et npm
+- ffmpeg (pour le traitement vidéo)
+- Sur macOS : sips ou ImageMagick (pour la conversion HEIC)
 
 ## Installation
 
-1. Clone this repository or download the source code
-2. Navigate to the project directory
-3. Install dependencies:
+1. Clonez ce dépôt ou téléchargez le code source
+2. Naviguez vers le répertoire du projet
+3. Installez les dépendances :
 
 ```bash
 npm install
 ```
 
-4. Make the script globally available (optional):
+4. Rendez le script disponible globalement (optionnel) :
 
 ```bash
 npm link
 ```
 
-## Usage
+## Utilisation
 
-Run the application with the required arguments:
+Exécutez l'application avec les arguments (optionnels) :
 
 ```bash
-video-processor <video-file> <image-file> <output-directory>
+process_video.js [fichier-video] [fichier-image]
 ```
 
-For example:
+Par exemple :
 
 ```bash
-video-processor video.mp4 image.jpg ~/Videos/output
+process_video.js video.mp4 image.jpg
 ```
 
-Or if you didn't install it globally:
+Ou si vous ne l'avez pas installé globalement :
 
 ```bash
-npm start -- video.mp4 image.jpg ~/Videos/output
+npm start -- video.mp4 image.jpg
 ```
 
 ### Arguments
 
-- `video-file`: Path to the video file
-- `image-file`: Path to the image file (HEIC, JPEG, PNG)
-- `output-directory`: Directory to save the processed video
+- `fichier-video` : Chemin vers le fichier vidéo (optionnel, utilise la valeur de config.js par défaut)
+- `fichier-image` : Chemin vers le fichier image ou répertoire (optionnel, utilise la valeur de config.js par défaut)
+  - Si un répertoire est spécifié, le fichier image le plus récent sera utilisé
+  - Formats supportés : jpg, jpeg, png, heic, gif, bmp, tiff, webp
 
-### Help
-
-To see usage information:
+### Exemples d'utilisation
 
 ```bash
-video-processor --help
+process_video.js                     # Utilise les chemins définis dans config.js
+process_video.js video.mp4           # Utilise le chemin vidéo spécifié et le chemin image de config.js
+process_video.js video.mp4 image.jpg # Utilise les chemins spécifiés
+process_video.js video.mp4 ~/Images  # Utilise le fichier image le plus récent du répertoire ~/Images
 ```
 
-## How It Works
+### Aide
 
-The application:
-1. Takes a video file and an image file as input
-2. Converts HEIC images to JPEG if necessary
-3. Adds the image as the first frame of the video
-4. Saves the processed video to the specified output directory
+Pour voir les informations d'utilisation :
 
-The application uses:
-- ffmpeg for video processing
-- sips or ImageMagick for HEIC conversion (on macOS)
+```bash
+process_video.js --help
+```
 
-## Development
+## Fonctionnement
 
-This project is structured as follows:
+L'application :
+1. Prend un fichier vidéo et un fichier image en entrée
+2. Convertit les images HEIC en JPEG si nécessaire
+3. Ajoute l'image comme première image de la vidéo
+4. Enregistre la vidéo traitée dans le même répertoire que l'image
 
-- `process_video.js` - Command-line interface
-- `video-processor.js` - Video processing logic
-- `config.js` - Configuration variables and messages
-- `package.json` - Project configuration
+L'application utilise :
+- ffmpeg pour le traitement vidéo
+- sips ou ImageMagick pour la conversion HEIC (sur macOS)
 
-To modify the application:
-1. Make your changes to the source code
-2. Test with `npm start -- <arguments>`
+## Développement
 
-To customize the application behavior:
-1. Edit the variables in `config.js` to change parameters like video dimensions or output file names
-2. No recompilation is needed - changes take effect immediately
+Ce projet est structuré comme suit :
 
-## File Structure Explained
+- `process_video.js` - Interface en ligne de commande et logique de traitement vidéo
+- `config.js` - Variables de configuration pour les chemins de fichiers
 
-If you're wondering which file to use:
+Pour modifier l'application :
+1. Effectuez vos modifications dans le code source
+2. Testez avec `npm start -- [arguments]`
 
-- **process_video.js**: This is the main file you should run directly. It's the command-line interface that accepts your input arguments (video file, image file, output directory) and displays the results. You run this file using the commands shown in the Usage section above.
+Pour personnaliser le comportement de l'application :
+1. Modifiez les variables dans `config.js` pour changer les chemins par défaut
+2. Aucune recompilation n'est nécessaire - les changements prennent effet immédiatement
 
-- **video-processor.js**: This is a module file that contains the core video processing logic. You don't run this file directly - it's imported and used by process_video.js. If you're a developer looking to understand or modify how the video processing works, this is the file to examine.
+## Structure des fichiers expliquée
 
-- **config.js**: This file contains all the configurable parameters and messages used by the application. You don't run this file directly, but you can edit it to customize the application's behavior without changing the core logic. For example, you can change the video dimensions, output file naming, or error messages.
+- **process_video.js** : C'est le fichier principal que vous devez exécuter directement. Il s'agit de l'interface en ligne de commande qui accepte vos arguments d'entrée (fichier vidéo, fichier image) et affiche les résultats. Il contient également toute la logique de traitement vidéo.
 
-The relationship between these files:
-1. When you run `npm start` or `video-processor` command, process_video.js is executed
-2. process_video.js imports configuration from config.js and parses your command-line arguments
-3. process_video.js calls the processVideo function from video-processor.js
-4. video-processor.js imports configuration from config.js and does the actual work of processing the video
-5. video-processor.js returns the result to process_video.js
-6. process_video.js displays the result to you
+- **config.js** : Ce fichier contient les chemins configurables utilisés par l'application. Vous n'exécutez pas ce fichier directement, mais vous pouvez le modifier pour personnaliser les chemins par défaut de l'application sans changer la logique principale.
 
-## License
+Variables configurables dans config.js :
+- `videoPath` : Chemin par défaut vers le fichier vidéo (utilisé si aucun argument n'est fourni)
+- `imagePath` : Chemin par défaut vers le fichier image (utilisé si aucun argument n'est fourni)
 
-MIT
+Ces chemins peuvent contenir la variable `$HOME` qui sera remplacée par le répertoire personnel de l'utilisateur.

@@ -4,7 +4,8 @@
   "description": "Command-line video processing application",
   "main": "process_video.js",
   "scripts": {
-    "start": "node process_video.js"
+    "start": "node process_video.js",
+    "help" : "node process_video.js --help"
   },
   "bin": {
     "process_video.js": "./process_video.js"

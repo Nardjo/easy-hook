@@ -1,0 +1,12 @@
+{
+  "name": "video-processor",
+  "version": "1.0.0",
+  "description": "Command-line video processing application",
+  "main": "process_video.js",
+  "scripts": {
+    "start": "node process_video.js"
+  },
+  "bin": {
+    "process_video.js": "./process_video.js"
+  }
+}

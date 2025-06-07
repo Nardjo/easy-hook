@@ -15,6 +15,14 @@ export default defineNuxtConfig({
 	// Optimisations pour les performances
 	nitro: {
 		compressPublicAssets: true,
+		routeRules: {
+			'/**': {
+				headers: {
+					'Cross-Origin-Opener-Policy': 'same-origin',
+					'Cross-Origin-Embedder-Policy': 'require-corp'
+				}
+			}
+		}
 	},
 
 	app: {
@@ -33,17 +41,10 @@ export default defineNuxtConfig({
 	},
 
 	vite: {
-		// Optimisations pour WebAssembly et dépendances
+		// Optimisations pour les performances
 		optimizeDeps: {
-			exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util'],
 			esbuildOptions: {
 				target: 'esnext'
-			}
-		},
-		server: {
-			headers: {
-				'Cross-Origin-Embedder-Policy': 'require-corp',
-				'Cross-Origin-Opener-Policy': 'same-origin'
 			}
 		},
 		// Optimisations Vite pour les performances
@@ -54,13 +55,6 @@ export default defineNuxtConfig({
 				compress: {
 					drop_console: false, // Garder les logs pour le débogage
 					pure_funcs: ['console.debug']
-				}
-			},
-			rollupOptions: {
-				output: {
-					manualChunks: {
-						ffmpeg: ['@ffmpeg/ffmpeg', '@ffmpeg/util']
-					}
 				}
 			}
 		}

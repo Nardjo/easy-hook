@@ -1,17 +1,26 @@
-#!/usr/bin/env node
+// @ts-nocheck
 
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
-const config = require('./config');
+import { execSync } from 'child_process'
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
 
 // File paths and names (constants)
 const TEMP_JPEG_FILENAME = "temp_hook.jpg";
 const OUTPUT_FILE_PREFIX = "processed_";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+// Dossier où se trouvent les vidéos
+const VIDEOS_DIR = path.join(__dirname, 'videos');
+
+// Extensions vidéo supportées
+const VIDEO_EXTENSIONS = ['.mp4', '.mov', '.avi', '.mkv', '.webm'];
+
 // Video processing parameters (constants)
 const VIDEO_WIDTH = 720;
-const VIDEO_HEIGHT = 1280;
+const VIDEO_HEIGHT = 1278;
 const FRAME_DURATION = 0.033; // in seconds
 
 // Command strings (constants)
@@ -20,49 +29,18 @@ const IMAGEMAGICK_CHECK_COMMAND = 'command -v convert';
 const IMAGEMAGICK_CONVERT_COMMAND = 'convert "{imagePath}" "{jpegPath}"';
 const FFMPEG_COMMAND = 'ffmpeg -i "{videoPath}" -i "{jpegPath}" ' +
   '-filter_complex "[1:v]scale={videoWidth}:{videoHeight}:force_original_aspect_ratio=decrease,' +
-  'pad={videoWidth}:{videoHeight}:(ow-iw)/2:(oh-ih)/2,setpts=PTS-STARTPTS[overlay];' +
+  'pad={videoWidth}:{videoHeight}:(ow-iw)/2:(oh-ih)/2,setdar=9/16,setpts=PTS-STARTPTS[overlay];' +
   '[0:v][overlay]overlay=0:0:enable=\'lt(t,{frameDuration})\'" ' +
-  '-c:a copy "{outputVideo}"';
+  '-c:v libx264 -preset veryfast -profile:v high -level 4.2 -pix_fmt yuv420p -aspect 9:16 -c:a aac -b:a 128k -movflags +faststart "{outputVideo}"';
 
-// Messages in French
-const HEIC_CONVERTED_SIPS = "HEIC converti en JPEG en utilisant sips";
-const HEIC_CONVERTED_IMAGEMAGICK = "HEIC converti en JPEG en utilisant ImageMagick";
+// Messages utiles pour l'utilisateur
 const PROCESSING_VIDEO = "Traitement de la vidéo avec ffmpeg...";
 const VIDEO_PROCESSED = "✅ Vidéo traitée avec succès: {outputPath}";
-
-// Error messages
 const VIDEO_NOT_FOUND = "Fichier vidéo introuvable à {videoPath}";
 const IMAGE_NOT_FOUND = "Fichier image introuvable à {imagePath}";
-const HEIC_CONVERSION_FAILED = "Échec de la conversion HEIC en JPEG. Veuillez vous assurer que sips ou ImageMagick est installé.";
 const FFMPEG_FAILED = "Le traitement ffmpeg a échoué: {error}";
-const OUTPUT_NOT_CREATED = "Le fichier de sortie n'a pas été créé";
+const OUTPUT_NOT_CREATED = "La vidéo traitée n'a pas été créée.";
 const UNEXPECTED_ERROR = "Une erreur inattendue s'est produite: {error}";
-const MISSING_ARGUMENTS = "Erreur: Arguments requis manquants";
-const SIPS_FAILED = "La conversion sips a échoué, essai d'une méthode alternative avec ImageMagick...";
-
-// CLI messages
-const STARTING_PROCESSING = "🎬 Démarrage du traitement vidéo...";
-const VIDEO_FILE_INFO = "🎥 Fichier vidéo: {videoPath}";
-const IMAGE_FILE_INFO = "🖼️ Fichier image: {imagePath}";
-const IMAGE_FROM_DIR_INFO = "🖼️ Fichier image (le plus récent du répertoire): {imagePath}";
-const OUTPUT_DIR_INFO = "📁 Répertoire de sortie (même chemin que l'image): {outputDir}";
-
-// CLI usage information in French
-const USAGE_INFO = `
-Utilisation: process_video.js [fichier-video] [fichier-image]
-
-Arguments (optionnels):
-  fichier-video      Chemin vers le fichier vidéo (par défaut: valeur de config.js)
-  fichier-image      Chemin vers le fichier image ou répertoire (par défaut: valeur de config.js)
-                     Si un répertoire est spécifié, le fichier image le plus récent sera utilisé
-                     (formats supportés: jpg, jpeg, png, heic, gif, bmp, tiff, webp)
-
-Exemples:
-  process_video.js                     # Utilise les chemins définis dans config.js
-  process_video.js video.mp4           # Utilise le chemin vidéo spécifié et le chemin image de config.js
-  process_video.js video.mp4 image.jpg # Utilise les chemins spécifiés
-  process_video.js video.mp4 ~/Images  # Utilise le fichier image le plus récent du répertoire ~/Images
-`;
 
 /**
  * Process a video by adding an image as the first frame
@@ -74,9 +52,7 @@ Exemples:
 async function processVideo(videoPath, imagePath, outputDir) {
   return new Promise(async (resolve, reject) => {
     try {
-      // Set the configurable paths
-      config.videoPath = videoPath;
-      config.imagePath = imagePath;
+
 
       // Check if files exist
       if (!fs.existsSync(videoPath)) {
@@ -105,9 +81,9 @@ async function processVideo(videoPath, imagePath, outputDir) {
             .replace('{imagePath}', imagePath)
             .replace('{jpegPath}', jpegPath);
           execSync(sipsCommand, { stdio: 'pipe' });
-          console.log(HEIC_CONVERTED_SIPS);
+          console.log('HEIC converti en JPEG en utilisant sips');
         } catch (error) {
-          console.log(SIPS_FAILED);
+          console.log('La conversion sips a échoué, essai d\'une méthode alternative avec ImageMagick...');
 
           // Check if ImageMagick is installed
           try {
@@ -116,16 +92,23 @@ async function processVideo(videoPath, imagePath, outputDir) {
               .replace('{imagePath}', imagePath)
               .replace('{jpegPath}', jpegPath);
             execSync(convertCommand, { stdio: 'pipe' });
-            console.log(HEIC_CONVERTED_IMAGEMAGICK);
+            console.log('HEIC converti en JPEG en utilisant ImageMagick');
           } catch (error) {
-            return reject(new Error(HEIC_CONVERSION_FAILED));
+            return reject(new Error('Échec de la conversion HEIC en JPEG. Veuillez vous assurer que sips ou ImageMagick est installé.'));
           }
         }
       }
 
       // 2) Insert the image as the first frame
       console.log(PROCESSING_VIDEO);
-      const outputVideo = path.join(outputDir, `${OUTPUT_FILE_PREFIX}${path.basename(videoPath)}`);
+      // Force la sortie en .mp4 pour compat Instagram
+const outputBaseName = path.parse(videoPath).name;
+let outputVideo = path.join(outputDir, `${OUTPUT_FILE_PREFIX}${outputBaseName}.mp4`);
+let fileIndex = 1;
+while (fs.existsSync(outputVideo)) {
+  outputVideo = path.join(outputDir, `${OUTPUT_FILE_PREFIX}${outputBaseName}_${fileIndex}.mp4`);
+  fileIndex++;
+}
 
       try {
         const ffmpegCommand = FFMPEG_COMMAND
@@ -206,70 +189,87 @@ function findMostRecentFile(directoryPath) {
   }
 }
 
-// Main function
+// Main execution (CLI)
 async function main() {
-  // Get command line arguments
-  const args = process.argv.slice(2);
+    try {
+      // CLI argument parsing
+      const args = process.argv.slice(2);
+      let videoPath = args[0];
+      // Chemin du dossier Téléchargements (français ou anglais)
+      const downloadsDir = fs.existsSync(path.join(process.env.HOME, 'Téléchargements'))
+        ? path.join(process.env.HOME, 'Téléchargements')
+        : path.join(process.env.HOME, 'Downloads');
+      let imagePath = downloadsDir; // Toujours le dossier téléchargements
 
-  // Check if help is requested
-  if (args.includes('--help') || args.includes('-h')) {
-    printUsage();
-    process.exit(0);
-  }
+      // Sélection interactive de la vidéo si non précisée
+      if (!videoPath) {
+        if (!fs.existsSync(VIDEOS_DIR)) {
+          console.error(`Le dossier ${VIDEOS_DIR} n'existe pas.`);
+          process.exit(1);
+        }
+        const allFiles = fs.readdirSync(VIDEOS_DIR);
+        const videoFiles = allFiles.filter(f => VIDEO_EXTENSIONS.includes(path.extname(f).toLowerCase()));
+        if (videoFiles.length === 0) {
+          console.error(`Aucune vidéo trouvée dans ${VIDEOS_DIR}.`);
+          process.exit(1);
+        }
+        // Sélection interactive avec inquirer
+        const inquirer = (await import('inquirer')).default;
+        const { videoChoice } = await inquirer.prompt([
+          {
+            type: 'list',
+            name: 'videoChoice',
+            message: 'Sélectionnez la vidéo à traiter :',
+            choices: videoFiles,
+          },
+        ]);
+        videoPath = path.join(VIDEOS_DIR, videoChoice);
+      }
 
-  // Replace $HOME with the actual home directory in config paths
-  if (config.videoPath.includes('$HOME')) {
-    config.videoPath = config.videoPath.replace('$HOME', process.env.HOME);
-  }
-  if (config.imagePath.includes('$HOME')) {
-    config.imagePath = config.imagePath.replace('$HOME', process.env.HOME);
-  }
+      // Toujours prendre la plus récente du dossier téléchargements
+      let imageFromDirectory = false;
+      if (fs.existsSync(imagePath) && fs.statSync(imagePath).isDirectory()) {
+        const mostRecentFile = findMostRecentFile(imagePath);
+        if (mostRecentFile) {
+          console.log(`Utilisation du fichier le plus récent dans le répertoire: ${path.basename(mostRecentFile)}`);
+          imagePath = mostRecentFile;
+          imageFromDirectory = true;
+        } else {
+          console.error(`Aucun fichier image trouvé dans le répertoire: ${imagePath}`);
+          process.exit(1);
+        }
+      }
 
-  // Use default paths from config.js if no arguments are provided
-  let videoPath = args.length > 0 ? args[0] : config.videoPath;
-  let imagePath = args.length > 1 ? args[1] : config.imagePath;
+      const outputDir = path.dirname(imagePath);
 
-  // Check if imagePath is a directory, and if so, find the most recent image file
-  let imageFromDirectory = false;
-  if (fs.existsSync(imagePath) && fs.statSync(imagePath).isDirectory()) {
-    const mostRecentFile = findMostRecentFile(imagePath);
-    if (mostRecentFile) {
-      console.log(`Utilisation du fichier le plus récent dans le répertoire: ${path.basename(mostRecentFile)}`);
-      imagePath = mostRecentFile;
-      imageFromDirectory = true;
-    } else {
-      console.error(`Aucun fichier image trouvé dans le répertoire: ${imagePath}`);
+      // Validation des chemins
+      if (!videoPath || !imagePath) {
+        console.error(MISSING_ARGUMENTS);
+        console.log(USAGE_INFO);
+        process.exit(1);
+      }
+
+      console.log('🎬 Démarrage du traitement vidéo...');
+      console.log(`🎥 Fichier vidéo: ${videoPath}`);
+      if (imageFromDirectory) {
+        console.log(`🖼️ Fichier image (le plus récent du répertoire): ${imagePath}`);
+      } else {
+        console.log(`🖼️ Fichier image: ${imagePath}`);
+      }
+      console.log(`📁 Répertoire de sortie (même chemin que l'image): ${outputDir}`);
+
+      try {
+        // Process the video
+        const outputPath = await processVideo(videoPath, imagePath, outputDir);
+        console.log(VIDEO_PROCESSED.replace('{outputPath}', outputPath));
+      } catch (error) {
+        console.error(`❌ ${error.message}`);
+        process.exit(1);
+      }
+    } catch (error) {
+      console.error(error.message || error);
       process.exit(1);
     }
-  }
-
-  const outputDir = path.dirname(imagePath);
-
-  // Check if the paths are valid
-  if (!videoPath || !imagePath) {
-    console.error(MISSING_ARGUMENTS);
-    printUsage();
-    process.exit(1);
-  }
-
-  console.log(STARTING_PROCESSING);
-  console.log(VIDEO_FILE_INFO.replace('{videoPath}', videoPath));
-  if (imageFromDirectory) {
-    console.log(IMAGE_FROM_DIR_INFO.replace('{imagePath}', imagePath));
-  } else {
-    console.log(IMAGE_FILE_INFO.replace('{imagePath}', imagePath));
-  }
-  console.log(OUTPUT_DIR_INFO.replace('{outputDir}', outputDir));
-
-  try {
-    // Process the video
-    const outputPath = await processVideo(videoPath, imagePath, outputDir);
-    console.log(VIDEO_PROCESSED.replace('{outputPath}', outputPath));
-  } catch (error) {
-    console.error(`❌ ${error.message}`);
-    process.exit(1);
-  }
 }
 
-// Run the main function
 main();

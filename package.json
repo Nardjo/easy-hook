@@ -5,9 +5,12 @@
   "main": "process_video.js",
   "scripts": {
     "start": "node process_video.js",
-    "help" : "node process_video.js --help"
+    "help": "node process_video.js --help"
   },
   "bin": {
     "process_video.js": "./process_video.js"
+  },
+  "dependencies": {
+    "inquirer": "^12.7.0"
   }
 }

@@ -50,3 +50,5 @@ temp/
 # Video processing temporary files
 temp_hook.jpg
 processed_*
+
+videos/*
